@@ -82,6 +82,9 @@ makeIrExternal (SFuncProto _ d _) = do
 
 stmtToInternal :: SStmt -> WithIr [IrInternal]
 stmtToInternal (SSemiOnly _) = return []
+stmtToInternal (SCompStmt _ [] ss) = do
+  stmts <- (mapM stmtToInternal ss)
+  return (concat stmts)
 stmtToInternal (SCompStmt _ ds ss) = do
   decls <- (mapM makeIrExternal ds)
   stmts <- (mapM stmtToInternal ss)
@@ -252,11 +255,11 @@ expToInternal d (Func _ str es) = do
     if(ftype (t decl) == SVoid)
     then do
       decls <- manyDecls es
-      inters <- zipInternal (init decls) es
+      inters <- zipInternal decls es
       return [IrComp (map (VarDecl) decls) (inters ++ [(IrVCall decl decls)])]
     else do 
       decls <- manyDecls es
-      inters <- zipInternal (init decls) es
+      inters <- zipInternal decls es
       return [IrComp (map (VarDecl) decls) (inters ++ [(IrCall d decl decls)])]
 expToInternal _ (Assign _ e1 e2) = do
   st <- get

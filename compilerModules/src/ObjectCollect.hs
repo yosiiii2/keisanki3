@@ -166,7 +166,7 @@ objColExp (Func p str args) = do
         (SFunc _ typeOfArgs) -> do
                   typeOfArgs2 <- mapM objColExp args 
                   if(typeOfArgs == typeOfArgs2)
-                  then (return (t a))
+                  then (return test)
                   else throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":arguments' types don't match, in the call of function:" ++ str)                  
         _ -> throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ": called function is not declared as function : " ++ (show a))
 objColExp (Or p e1 e2) = do

@@ -26,12 +26,12 @@ lexer = Token.makeTokenParser smallCDef
 
 -- 各シンボルの定義
 
-symbol    = Token.symbol lexer
-natural   = Token.natural lexer
-semi      = Token.semi lexer
-identifier= Token.identifier lexer
-reserved  = Token.reserved lexer
-reservedOp= Token.reservedOp lexer
-commaSep1 = Token.commaSep1 lexer
-commaSep = Token.commaSep lexer
-char   = Token.charLiteral lexer
+symbol     = Token.symbol lexer
+natural    = Token.natural lexer
+semi       = Token.semi lexer
+identifier = Token.identifier lexer
+reserved   = Token.reserved lexer
+reservedOp = Token.reservedOp lexer
+commaSep1  = Token.commaSep1 lexer
+commaSep   = Token.commaSep lexer
+char       = Token.charLiteral lexer

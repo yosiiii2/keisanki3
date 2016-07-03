@@ -44,10 +44,11 @@ exchangeType (Int _) True num (Nothing) False= SArray (SPointer SInt) num
                                        
 exchangeStmt :: Stmt -> SStmt
 exchangeStmt (CompStmt p e s) = (SCompStmt p (map exchangeEx e) (map exchangeStmt s))
-exchangeStmt (Statement p e) = (SStatement p e)
+exchangeStmt (Statement p e) = (SStatement p (Expression e))
 exchangeStmt (SemiOnly p) = (SSemiOnly p)
-exchangeStmt (IfElse p e s1 s2) = (SIfElse p e (exchangeStmt s1) (exchangeStmt s2))
-exchangeStmt (While p e s) = (SWhile p e (exchangeStmt s))
-exchangeStmt (Return p e) = (SReturn p e)
+exchangeStmt (IfElse p e s1 s2) = (SIfElse p (Expression e) (exchangeStmt s1) (exchangeStmt s2))
+exchangeStmt (While p e s) = (SWhile p (Expression e) (exchangeStmt s))
+exchangeStmt (Return p e) = (SReturn p (Expression e))
 exchangeStmt (VReturn p) = (SVReturn p)
 
+                               

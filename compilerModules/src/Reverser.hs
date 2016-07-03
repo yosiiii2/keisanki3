@@ -32,6 +32,7 @@ reverseStmt (IfElse _ e s1 s2) = "if(" ++ (reverseExp e) ++ ")" ++ (reverseStmt 
 reverseStmt (While _ e s) = "while(" ++ (reverseExp e) ++ ")" ++ (reverseStmt s)
 reverseStmt (For _ e1 e2 e3 s) = "for("++(reverseExp e1) ++ ";" ++ (reverseExp e2)++";"++(reverseExp e3)++")"++(reverseStmt s)
 reverseStmt (Return _ e) = "return " ++ (reverseExp e) ++ ";"
+reverseStmt (VReturn _) = "return " ++ ";"
 
 
 reverseExp :: Exp -> String

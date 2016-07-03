@@ -1,9 +1,7 @@
 module IrTypeDef where
 
 import SemanticTypeDef
-import Control.Monad.Writer
 import Control.Monad.State
-import Control.Monad.Identity
 
 type IrAST = [IrExternal]
     
@@ -11,7 +9,7 @@ data IrExternal = VarDecl Decl
                 | FunDef Decl [IrExternal] [IrInternal]
                   deriving Show
 
-data IrInternal = IrAssign Decl IrInternal
+data IrInternal = IrAssign  Decl IrInternal
                 | IrWrite Decl Decl
                 | IrRead Decl Decl
                 | IrLabel String -- ここのStringはLabelのname

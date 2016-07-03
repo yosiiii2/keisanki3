@@ -21,7 +21,6 @@ run input = case parse program "Program" input of
                                            then (intercalate "\n" (map show $ (evalState (makeIr val2) ([],0,0))))
                                            else ((intercalate "\n" (map show (snd hoge))) ++ "\n" ++ (intercalate "\n" (map show (evalState (makeIr val2) ([],0,0)))))
 
-
 main :: IO()
 main = do
     str <- getArgs

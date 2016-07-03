@@ -40,31 +40,31 @@ objColEx (fp@(SFuncProto p d sd)) = do -- SFuncProtoを受け取ると
   if (hoge == Nothing) -- 存在しなければ
   then do modify (addEnv d) -- 環境に追加して
           modify (M.empty :) -- 新たに環境を作り
-          mapM (objColDecl p) sd -- 引数の各DeclにobjColDeclをかけ
+          _ <- mapM (objColDecl p) sd -- 引数の各DeclにobjColDeclをかけ
           modify (\(_:xs) -> xs) -- 新たに作った環境を消去し
           return fp -- 元のSFuncProtoを返す(ここで環境がつけ加わる)
   else let (Just (Decl _ k t2)) = hoge -- 存在すれば
         in if(((k == Proto)||(k == Fun))&&(t(d) == t2)) -- それがプロトタイプ宣言か関数宣言でありかつ引数の型が等しければ
            then return fp -- 環境をつけて元のSFuncProtoを返す
            else throwError ("error at " ++ (show (sourceLine p))++ (show (sourceColumn p)) ++ ":Double Declaraion") -- そうでなければerrorを吐く
-objColEx (fp@(SFunctionDef p d sd stmt)) = do -- SFunctionDefを受け取ると
+objColEx (SFunctionDef p d sd stmt) = do -- SFunctionDefを受け取ると
   env <- get -- 環境を取り出して
   let hoge = objCheck (name d) env -- 関数名を環境内で確認し
   if (hoge == Nothing) -- 存在しなければ
   then do modify (addEnv d)
           modify (M.empty :)
-          mapM (objColDecl p) sd -- プロトタイプ宣言と同様にした上で
-          objColStmt (t d) stmt -- 中のstatementに対してobjColStmtをかける
+          _ <- mapM (objColDecl p) sd -- プロトタイプ宣言と同様にした上で
+          newStmt <- objColStmt (t d) stmt -- 中のstatementに対してobjColStmtをかける
           modify (\(_:xs) -> xs)
-          return fp 
+          return (SFunctionDef p d sd newStmt)
   else let (Just (Decl _ k t2)) = hoge --存在すれば
         in if((k == Proto)&&(t(d) == t2)) -- それがプロトタイプ宣言であり且つ型が同じなら
            then do
              modify (M.empty :) -- 無視して続行する
-             mapM (objColDecl p) sd
-             objColStmt t2 stmt
+             _ <- mapM (objColDecl p) sd
+             newStmt <- objColStmt t2 stmt
              modify (\(_:xs) -> xs)
-             return fp
+             return (SFunctionDef p d sd newStmt)
            else throwError  ("error at " ++ (show (sourceLine p)) ++ (show (sourceColumn p)) ++ ":Double Declaration") --そうでなければerrorを吐く
 
 
@@ -106,45 +106,49 @@ objColDecl p d = do
                          
 objColStmt :: SemType -> SStmt -> WithEnv SStmt -- 今いる関数の型としてのsとSStmtを受け取って環境付きのSStmtを返す
 objColStmt _ (SStatement p e) = do -- 受け取ったのがSStatementなら
-  objColExp e
-  return (SStatement p e)
-objColStmt ty (c@(SCompStmt _ xs st)) = do
+  let (Expression expr) = e
+  hoge <- objColExp expr
+  return (SStatement p (SemanticExpression hoge))
+objColStmt nowFuncType (SCompStmt p xs st) = do
   modify (M.empty :)
-  mapM objColEx xs
-  mapM (objColStmt ty) st
+  _ <- mapM objColEx xs
+  stmt <- mapM (objColStmt nowFuncType) st
   modify (\(_:hoge) -> hoge)
-  return c
-objColStmt ty (SIfElse p e s1 s2) = do
-  cond <- objColExp e
-  if(cond == SInt)
+  -- throwError (show (SCompStmt p xs stmt))
+  return (SCompStmt p xs stmt)
+objColStmt nowFuncType (SIfElse p e s1 s2) = do
+  let (Expression expr) = e
+  cond <- objColExp expr
+  if((ty cond) == SInt)
   then do
-    objColStmt ty s1
-    objColStmt ty s2
-    return (SIfElse p e s1 s2)
+    st1 <- objColStmt nowFuncType s1
+    st2 <- objColStmt nowFuncType s2
+    return (SIfElse p (SemanticExpression cond) st1 st2)
   else  throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":If statement's condition's type: " ++ (show cond) ++ " isn't Int.")
-objColStmt ty (SWhile p e s1) = do
-  objColExp e
-  objColStmt ty s1
-  return (SWhile p e s1)
-objColStmt ty (SReturn p e) = do
-  etype <- objColExp e
-  if(ty == etype)
-  then return (SReturn p e)
-  else throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":return type:" ++ (show etype) ++ " doesn't match the function's type: " ++ (show ty) ++ ".")
-objColStmt ty (SVReturn p) =
-    if(ty == SVoid)
+objColStmt nowFuncType (SWhile p e s1) = do
+  let (Expression expr) = e  
+  cond <- objColExp expr
+  if((ty cond) == SInt)
+  then do
+    st1 <- objColStmt nowFuncType s1
+    return (SWhile p (SemanticExpression cond) st1)
+  else  throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":While statement's condition's type: " ++ (show cond) ++ " isn't Int.")
+objColStmt nowFuncType (SReturn p e) = do
+  let (Expression expr) = e
+  express <- objColExp expr
+  if(nowFuncType == (ty express))
+  then return (SReturn p (SemanticExpression express))
+  -- then throwError (show (SReturn p (SemanticExpression express)))
+  else throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":return type:" ++ (show express) ++ " doesn't match the function's type: " ++ (show nowFuncType) ++ ".")
+objColStmt nowFuncType (SVReturn p) =
+    if(nowFuncType == SVoid)
     then return (SVReturn p)
-    else throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ "return type: Void doesn't match the function's type: " ++ (show ty) ++ ".")
-objColStmt _ hoge = return hoge
+    else throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ "return type: Void doesn't match the function's type: " ++ (show nowFuncType) ++ ".")
+-- objColStmt _ hoge = return hoge
 
-
-idCheck :: SemType -> SemType
-idCheck (SArray ty _) = (SPointer ty)
-idCheck a = a
-                    
 -- expressionからオブジェクト名を引っ張ってこないと型の情報が取り出せない
 -- じゃあ戻り値を型にすればいい
-objColExp :: Exp -> WithEnv SemType
+objColExp :: Exp -> WithEnv SExp
 objColExp (Id p str) = do
   env <- get
   let hoge = objCheck str env
@@ -153,8 +157,8 @@ objColExp (Id p str) = do
       let (Just a) = hoge
       case (t a) of
         (SFunc _ _) -> throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":called function as variable " ++ str) 
-        _ -> return (idCheck (t a))
-objColExp (Const _ _) = return SInt
+        _ -> return (SId (t a) str)
+objColExp (Const _ num) = return (SConst SInt num)
 objColExp (Func p str args) = do
   env <- get
   let hoge = objCheck str env
@@ -164,119 +168,120 @@ objColExp (Func p str args) = do
           test = (t a)
       case test of
         (SFunc _ typeOfArgs) -> do
-                  typeOfArgs2 <- mapM objColExp args 
+                  piyo <- mapM objColExp args
+                  let typeOfArgs2 = map ty piyo
                   if(typeOfArgs == typeOfArgs2)
-                  then (return test)
+                  then (return (SFuncExp test str piyo))
                   else throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":arguments' types don't match, in the call of function:" ++ str)                  
         _ -> throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ": called function is not declared as function : " ++ (show a))
 objColExp (Or p e1 e2) = do
   t1 <- (objColExp e1)
   t2 <- (objColExp e2)
-  if((t1==SInt) && (t2==SInt))
-  then return SInt
+  if(((ty t1)==SInt) && ((ty t2)==SInt))
+  then return (SOr SInt t1 t2)
   else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":Or operation's arguments' types don't match")
 objColExp (And p e1 e2) = do
   t1 <- (objColExp e1)
   t2 <- (objColExp e2)
-  if((t1==SInt) && (t2==SInt))
-  then return SInt
+  if (((ty t1)==SInt) && ((ty t2)==SInt))
+  then return (SAnd SInt t1 t2)
   else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":And Operation's arguments' types don't match : " ++ (show t1) ++ " and " ++ (show t2))
 objColExp (Equal p e1 e2) = do
   t1 <- (objColExp e1)
   t2 <- (objColExp e2)
-  if(t1 == t2)
-  then return SInt
+  if(ty t1 == ty t2)
+  then return (SEqual SInt t1 t2)
   else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":Equal Operation's arguments' types don't match : " ++ (show t1) ++ " and " ++ (show t2))
 objColExp (NotEqual p e1 e2) = do
   t1 <- (objColExp e1)
   t2 <- (objColExp e2)
-  if(t1 == t2)
-  then return SInt
+  if(ty t1 == ty t2)
+  then return (SNotEqual SInt t1 t2)
   else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":NotEqual Operation's arguments' types don't match : " ++ (show t1) ++ " and " ++ (show t2))
 objColExp (Small p e1 e2) = do
   t1 <- (objColExp e1)
   t2 <- (objColExp e2)
-  if(t1 == t2)
-  then return SInt
+  if(ty t1 == ty t2)
+  then return (SSmall SInt t1 t2)
   else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":Less Than Operation's arguments' types don't match : " ++ (show t1) ++ " and " ++ (show t2))
 objColExp (Large p e1 e2) = do
   t1 <- (objColExp e1)
   t2 <- (objColExp e2)
-  if(t1 == t2)
-  then return SInt
+  if(ty t1 == ty t2)
+  then return (SLarge SInt t1 t2)
   else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ "Greater Than Operation's :arguments' types don't match : " ++ (show t1) ++ " and " ++ (show t2))
 objColExp (SmallEq p e1 e2) = do
   t1 <- (objColExp e1)
   t2 <- (objColExp e2)
-  if(t1 == t2)
-  then return SInt
+  if(ty t1 == ty t2)
+  then return (SSmallEq SInt t1 t2)
   else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":LE Operation's arguments' types don't match : " ++ (show t1) ++ " and " ++ (show t2))
 objColExp (LargeEq p e1 e2) = do
   t1 <- (objColExp e1)
   t2 <- (objColExp e2)
-  if(t1 == t2)
-  then return SInt
+  if(ty t1 == ty t2)
+  then return (SLargeEq SInt t1 t2)
   else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":GE Operation's arguments' types don't match : " ++ (show t1) ++ " and " ++ (show t2))
 objColExp (Add p e1 e2) = do
   t1 <- (objColExp e1)
   t2 <- (objColExp e2)
-  if((t1 == SInt)&&(t2 == SInt))
-  then return SInt
-  else if (((t1 == SInt)&&(t2 == (SPointer SInt)))||((t1 == (SPointer SInt))&&(t2 == SInt)))
-       then return (SPointer SInt)
-       else  if (((t1 == SInt)&&(t2 == (SPointer (SPointer SInt)))) || ((t1 == (SPointer (SPointer SInt)))&&(t2 == SInt)))
-             then return (SPointer (SPointer SInt))
+  if((ty t1 == SInt)&&(ty t2 == SInt))
+  then return (SAdd SInt t1 t2)
+  else if (((ty t1 == SInt)&&(ty t2 == (SPointer SInt)))||((ty t1 == (SPointer SInt))&&(ty t2 == SInt)))
+       then return (SAdd (SPointer SInt) t1 t2)
+       else  if (((ty t1 == SInt)&&(ty t2 == (SPointer (SPointer SInt)))) || ((ty t1 == (SPointer (SPointer SInt)))&&(ty t2 == SInt)))
+             then return (SAdd (SPointer (SPointer SInt)) t1 t2)
              else  throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":Add Operation's arguments' types don't match " ++ (show t1) ++ " and " ++ (show t2))
 objColExp (Sub p e1 e2) = do
   t1 <- (objColExp e1)
   t2 <- (objColExp e2)
-  if((t1 == SInt)&&(t2 == SInt))
-  then return SInt
-  else if ((t1 == (SPointer SInt))&&(t2 == SInt))
-       then return (SPointer SInt)
-       else  if ((t1 == (SPointer (SPointer SInt)))&&(t2 == SInt))
-             then return (SPointer (SPointer SInt))
+  if((ty t1 == SInt)&&(ty t2 == SInt))
+  then return (SSub SInt t1 t2)
+  else if ((ty t1 == (SPointer SInt))&&(ty t2 == SInt))
+       then return (SSub (SPointer SInt) t1 t2)
+       else  if ((ty t1 == (SPointer (SPointer SInt)))&&(ty t2 == SInt))
+             then return (SSub (SPointer (SPointer SInt)) t1 t2)
              else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":Subtraction Operation's arguments' types don't match : " ++ (show t1) ++ " and " ++ (show t2))
 objColExp (Mul p e1 e2) = do
   t1 <- (objColExp e1)
   t2 <- (objColExp e2)
-  if((t1 == SInt)&&(t2 == SInt))
-  then return SInt
+  if((ty t1 == SInt)&&(ty t2 == SInt))
+  then return (SMul SInt t1 t2)
   else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":Multiplication Operation's arguments' types don't match : " ++ (show t1) ++ " and " ++ (show t2))
 objColExp (Div p e1 e2) = do
   t1 <- (objColExp e1)
   t2 <- (objColExp e2)
-  if((t1 == SInt)&&(t2 == SInt))
-  then return SInt
+  if((ty t1 == SInt)&&(ty t2 == SInt))
+  then return (SDiv SInt t1 t2)
   else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":Division Operation's arguments' types don't match : " ++ (show t1) ++ " and " ++ (show t2))
 objColExp (ManyExp _ e) = do
-  let xs = map objColExp e
-  x <- (last xs)
-  return x
+  xs <- mapM objColExp e
+  let x = (last xs)
+  return (SManyExp (ty x) xs)
 objColExp (Address p e) = do
   x <- objColExp e
-  if(x == SInt)
+  if(ty x == SInt)
   then case e of
-         (Id _ _ ) -> return (SPointer SInt)
+         (Id _ _ ) -> return (SAddress (SPointer SInt) x)
          _ -> throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":in the Address operator, you can only use Identifier.")            
   -- else if(x == (SPointer SInt)) --pointerのアドレスはナシ
   --      then return (SPointer (SPointer SInt))
   else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":in the Address, type don't match")            
 objColExp (Pointer p e) = do
   x <- objColExp e
-  if(x == (SPointer SInt))
-  then return SInt
-  else if(x == (SPointer (SPointer SInt)))
-       then return (SPointer SInt)
+  if(ty x == (SPointer SInt))
+  then return (SPointerExp SInt x)
+  else if(ty x == (SPointer (SPointer SInt)))
+       then return (SPointerExp (SPointer SInt) x)
        else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":in the Pointer, type don't match")
 objColExp (Assign p l r) = do
   if(leftCheck l)
   then do
       left <- (objColExp l)
-      kata <- (objColExp r)
-      if(left == kata)
-      then return left
-      else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":Assign types don't match " ++ (show left) ++ " and " ++ (show kata))
+      right <- (objColExp r)
+      if(ty left == ty right)
+      then return (SAssign (ty left) left right)
+      else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":Assign types don't match " ++ (show left) ++ " and " ++ (show right))
   else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":Assign's left side needs variable")
 
 

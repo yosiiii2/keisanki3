@@ -1,7 +1,6 @@
 module TypeDef where
 
 import Text.Parsec.Pos
-import Data.List
 
 type AST = [External]
 type PointOr = Bool

@@ -33,9 +33,9 @@ data SemType = SInt
 instance Show SemType where
     show SInt = "int"
     show SVoid = "void"
-    show (SPointer ty) = ("*" ++ (show ty))
-    show (SArray ty num) = (show num) ++ " array of " ++ (show ty)
-    show (SFunc ty tys) = (show ty) ++ " function" ++ " with argument " ++ (intercalate "," (map show tys))
+    show (SPointer typ) = ("*" ++ (show typ))
+    show (SArray typ num) = (show num) ++ " array of " ++ (show typ)
+    show (SFunc typ tys) = (show typ) ++ " function" ++ " with argument " ++ (intercalate "," (map show tys))
     show (STemp) = "Temp"
                    
 instance Eq SemType where
@@ -43,9 +43,9 @@ instance Eq SemType where
     SVoid == SVoid = True -- SVoid同士も等しい
     SPointer t1 == SPointer t2 = (t1 == t2) -- SPointer同士は、中の型が等しいなら等しい
     SPointer t1 == SArray t2 _ = (t1 == t2) -- SPointerとSArrayは、中の型が等しいなら等しい
-    SArray t2 _ == SPointer t1  = (t1 == t2) -- SPointerとSArrayは、中の型が等しいなら等しい
+    SArray t2 _ == SPointer t1 = (t1 == t2) -- SPointerとSArrayは、中の型が等しいなら等しい
     SArray t1 _ == SArray t2 _ = (t1 == t2) -- SArray同士は、中の型が等しいなら等しい
-    SFunc t1 a1 == SFunc t2 a2 = (t1 == t2) && (a1 == a2) -- SFunc同士は、戻り値の型が等しく、且つ引数の型が等しいなら等しい
+    SFunc t1 a1 == SFunc t2 a2 = (t1 == t2) && (a1 == a2) -- SFunc同士は、戻り値の型が等しく、且つ引数の型が等Sしいなら等しい
     (SFunc t1 _) == t2 = (t1 == t2) -- SFuncと他の型は、SFuncの戻り値の型ともう一方の型が等しいなら等しい
     t2 == (SFunc t1 _)  = (t1 == t2) -- SFuncと他の型は、SFuncの戻り値の型ともう一方の型が等しいなら等しい
     STemp == STemp = True
@@ -60,16 +60,45 @@ data SExternal = SFuncProto SourcePos Decl [Decl]
                | SDeclaration SourcePos [Decl]
                  deriving Show
                           
-data SStmt = SStatement SourcePos Exp 
+data SStmt = SStatement SourcePos BothExp
            | SSemiOnly SourcePos
            | SCompStmt SourcePos [SExternal] [SStmt] 
-           | SIfElse SourcePos Exp SStmt SStmt 
-           | SWhile SourcePos Exp SStmt
-           | SReturn SourcePos Exp
+           | SIfElse SourcePos BothExp SStmt SStmt 
+           | SWhile SourcePos BothExp SStmt
+           | SReturn SourcePos BothExp
            | SVReturn SourcePos
              deriving Show
 
+data SExp = SAssign {ty :: SemType, exp1::SExp, exp2::SExp}
+          | SOr {ty :: SemType, exp1::SExp, exp2::SExp}
+          | SAnd {ty :: SemType, exp1::SExp, exp2::SExp}
+          | SEqual {ty :: SemType, exp1::SExp, exp2::SExp}
+          | SNotEqual {ty :: SemType, exp1::SExp, exp2::SExp}
+          | SSmall {ty :: SemType, exp1::SExp, exp2::SExp}
+          | SLarge {ty :: SemType, exp1::SExp, exp2::SExp}
+          | SSmallEq {ty :: SemType, exp1::SExp, exp2::SExp}
+          | SLargeEq {ty :: SemType, exp1::SExp, exp2::SExp} 
+          | SAdd {ty :: SemType, exp1::SExp, exp2::SExp} 
+          | SSub {ty :: SemType, exp1::SExp, exp2::SExp} 
+          | SMul {ty :: SemType, exp1::SExp, exp2::SExp} 
+          | SDiv {ty :: SemType, exp1::SExp, exp2::SExp} 
+          | SNeg {ty :: SemType, exp::SExp} 
+          | SAddress {ty :: SemType, exp::SExp} 
+          | SPointerExp {ty :: SemType, exp::SExp} 
+          | SArrayExp {ty :: SemType, exp1::SExp, exp2::SExp}
+          | SFuncExp {ty :: SemType, theNameOfFunction :: String, theArgsOfFunction :: [SExp]}
+          | SId {ty :: SemType, theNameOfIdentifier :: String}
+          | SConst {ty :: SemType, theNumberOfConstant :: Integer}
+          | SManyExp {ty :: SemType , theInsideOfTheSME :: [SExp]}
+            deriving Show
 
+
+data BothExp = Expression Exp
+             | SemanticExpression SExp
+               deriving Show
+
+
+    
 -- declaration of AST with environment (This is AST and list of list of Decl)
 type Env = [M.Map String Decl]
 -- type WithEnv = StateT Env (Except ObjectErr)

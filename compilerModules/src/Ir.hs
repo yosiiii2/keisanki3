@@ -1,14 +1,10 @@
 module Ir where
 
 import qualified Data.Map as M -- Map(連想配列)を扱うのに必要
-import TypeDef    
 import SemanticTypeDef
 import IrTypeDef
 import ObjectCollect
 import Control.Monad.State
--- import Control.Monad.Writer
--- import Control.Monad.Identity    
--- import Text.Parsec.Pos -- position 扱うのに必要
 
 
 env :: (Env,Int,Int) -> Env
@@ -52,7 +48,7 @@ mkNewLabel = do
   modify updLabel
   return (IrLabel str)
 
-               
+
 foldEnvl :: [Decl] -> (Env,Int,Int) -> (Env, Int, Int)
 foldEnvl [] st = st
 foldEnvl (x:xs) st = foldEnvl xs (updEnv x st)
@@ -92,10 +88,12 @@ stmtToInternal (SCompStmt _ ds ss) = do
 stmtToInternal (SVReturn _) = return [(IrVReturn)]
 stmtToInternal (SStatement _ e) = do
   d <- mkNewDecl -- 新しい変数を作って
-  expToInternal d e -- その変数と中身を投げとく
+  let (SemanticExpression expr) = e
+  expToInternal d expr -- その変数と中身を投げとく
 stmtToInternal (SIfElse _ e s1 s2) = do
   dec <- mkNewDecl
-  ex <- expToInternal dec e
+  let (SemanticExpression expr) = e
+  ex <- expToInternal dec expr
   l1 <- mkNewLabel
   l2 <- mkNewLabel
   stm1 <- stmtToInternal s1
@@ -103,21 +101,22 @@ stmtToInternal (SIfElse _ e s1 s2) = do
   return [(IrComp [VarDecl dec] (ex ++ [(IrIf dec l1 l2)] ++ [l1] ++ stm1 ++[l2] ++ stm2))]
 stmtToInternal (SWhile _ e st) = do
   dec <- mkNewDecl
-  ex <- expToInternal dec e
+  let (SemanticExpression expr) = e
+  ex <- expToInternal dec expr
   l1 <- mkNewLabel
   l2 <- mkNewLabel
   stm <- stmtToInternal st
   return [(IrComp [(VarDecl dec)] (ex ++ [(IrIf dec l1 l2)] ++ [l1] ++ stm ++[l2]))]
 stmtToInternal (SReturn _ e) = do
   dec <- mkNewDecl
-  ex <- expToInternal dec e
+  let (SemanticExpression expr) = e
+  ex <- expToInternal dec expr
   return [(IrComp [(VarDecl dec)] (ex ++ [(IrReturn dec)]))]
 
 
-
-expToInternal :: Decl -> Exp -> WithIr [IrInternal]
+expToInternal :: Decl -> SExp -> WithIr [IrInternal]
 -- 論理演算子
-expToInternal d (Or _ a b) = do
+expToInternal d (SOr _ a b) = do
   d1 <- mkNewDecl
   d2 <- mkNewDecl
   l1 <- mkNewLabel
@@ -127,7 +126,7 @@ expToInternal d (Or _ a b) = do
   ex2 <- expToInternal d2 b
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
                     (ex1 ++ ex2 ++ [(IrIf d1 l1 l2),l2,(IrIf d2 l1 l3),l1,(IrAssign d (IrLit 1)),l3,(IrAssign d (IrLit 0))]))]
-expToInternal d (And _ a b) = do
+expToInternal d (SAnd _ a b) = do
   d1 <- mkNewDecl
   d2 <- mkNewDecl
   l1 <- mkNewLabel
@@ -138,42 +137,42 @@ expToInternal d (And _ a b) = do
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
                     (ex1 ++ ex2 ++ [(IrIf d1 l1 l3),l1,(IrIf d2 l2 l3),l2,(IrAssign d (IrLit 1)),l3,(IrAssign d (IrLit 0))]))]
 -- 比較演算子
-expToInternal d (Equal _ a b) = do
+expToInternal d (SEqual _ a b) = do
   d1 <- mkNewDecl
   d2 <- mkNewDecl
   ex1 <- expToInternal d1 a
   ex2 <- expToInternal d2 b        
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
                   (ex1 ++ ex2 ++ [IrAssign d (IrEQ d1 d2)]))]
-expToInternal d (NotEqual _ a b) = do
+expToInternal d (SNotEqual _ a b) = do
   d1 <- mkNewDecl
   d2 <- mkNewDecl
   ex1 <- expToInternal d1 a
   ex2 <- expToInternal d2 b        
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
                   (ex1 ++ ex2 ++ [IrAssign d (IrNE d1 d2)]))]
-expToInternal d (Small _ a b) = do
+expToInternal d (SSmall _ a b) = do
   d1 <- mkNewDecl
   d2 <- mkNewDecl
   ex1 <- expToInternal d1 a
   ex2 <- expToInternal d2 b        
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
                   (ex1 ++ ex2 ++ [IrAssign d (IrST d1 d2)]))]
-expToInternal d (Large _ a b) = do
+expToInternal d (SLarge _ a b) = do
   d1 <- mkNewDecl
   d2 <- mkNewDecl
   ex1 <- expToInternal d1 a
   ex2 <- expToInternal d2 b        
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
                   (ex1 ++ ex2 ++ [IrAssign d (IrGT d1 d2)]))]
-expToInternal d (SmallEq _ a b) = do
+expToInternal d (SSmallEq _ a b) = do
   d1 <- mkNewDecl
   d2 <- mkNewDecl
   ex1 <- expToInternal d1 a
   ex2 <- expToInternal d2 b        
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
                   (ex1 ++ ex2 ++ [IrAssign d (IrSE d1 d2)]))]
-expToInternal d (LargeEq _ a b) = do
+expToInternal d (SLargeEq _ a b) = do
   d1 <- mkNewDecl
   d2 <- mkNewDecl
   ex1 <- expToInternal d1 a
@@ -181,28 +180,75 @@ expToInternal d (LargeEq _ a b) = do
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
                   (ex1 ++ ex2 ++ [IrAssign d (IrGE d1 d2)]))]
 -- 算術演算子
-expToInternal d (Add _ a b) = do
+
+        
+expToInternal d (SAdd _ a b) = do
   d1 <- mkNewDecl
   d2 <- mkNewDecl
-  ex1 <- expToInternal d1 a
-  ex2 <- expToInternal d2 b        
-  return [(IrComp [(VarDecl d1),(VarDecl d2)]
+  if( (addCheck $ ty a) && (addCheck $ ty b) )
+  then do -- aもbもpointerなら
+    ex1 <- expToInternal d1 a                            
+    ex2 <- expToInternal d2 b --そのまま
+    return [(IrComp [(VarDecl d1),(VarDecl d2)]          
+             (ex1 ++ ex2 ++ [IrAssign d (IrAdd d1 d2)]))]
+  else if(addCheck $ ty a)
+       then do -- aだけpointerなら
+         ex1 <- expToInternal d1 a                            
+         ex2 <- expToInternal d2 (SMul SInt b (SConst SInt 4)) --bを4倍する
+         return [(IrComp [(VarDecl d1),(VarDecl d2)]          
                   (ex1 ++ ex2 ++ [IrAssign d (IrAdd d1 d2)]))]
-expToInternal d (Sub _ a b) = do
+       else if(addCheck $ ty b)
+            then do -- bだけpointerなら
+              ex1 <- expToInternal d1 (SMul SInt a (SConst SInt 4)) -- aを4倍する
+              ex2 <- expToInternal d2 b                                 
+              return [(IrComp [(VarDecl d1),(VarDecl d2)]               
+                       (ex1 ++ ex2 ++ [IrAssign d (IrAdd d1 d2)]))]     
+            else do -- どっちも違うなら         
+              ex1 <- expToInternal d1 a                                           
+              ex2 <- expToInternal d2 b
+              return [(IrComp [(VarDecl d1),(VarDecl d2)] -- そのまま足す
+                       (ex1 ++ ex2 ++ [IrAssign d (IrAdd d1 d2)]))]
+
+        
+-- expToInternal d (SAdd _ a b) = do
+--   d1 <- mkNewDecl
+--   d2 <- mkNewDecl
+--   case (ty a) of
+--     (SPointer _)  -> do -- aがpointerなら
+--            ex1 <- expToInternal d1 a                            
+--            ex2 <- expToInternal d2 (SMul SInt b (SConst SInt 4)) --bを4倍する
+--            return [(IrComp [(VarDecl d1),(VarDecl d2)]          
+--                     (ex1 ++ ex2 ++ [IrAssign d (IrAdd d1 d2)]))]               
+--     _ -> do -- aがpointerでなくて
+--       case (ty b) of 
+--         (SPointer _) -> do -- bがpointerなら
+--                     ex1 <- expToInternal d1 (SMul SInt a (SConst SInt 4)) -- aを4倍する
+--                     ex2 <- expToInternal d2 b                                 
+--                     return [(IrComp [(VarDecl d1),(VarDecl d2)]               
+--                              (ex1 ++ ex2 ++ [IrAssign d (IrAdd d1 d2)]))]     
+--         _ -> do -- どっちも違うなら         
+--           ex1 <- expToInternal d1 a                                           
+--           ex2 <- expToInternal d2 b
+--           return [(IrComp [(VarDecl d1),(VarDecl d2)] -- そのまま足す
+--                    (ex1 ++ ex2 ++ [IrAssign d (IrAdd d1 d2)]))]
+
+expToInternal d (SSub _ a b) = do
   d1 <- mkNewDecl
   d2 <- mkNewDecl
   ex1 <- expToInternal d1 a
-  ex2 <- expToInternal d2 b        
+  ex2 <- if ((addCheck $ ty a) && (not $ addCheck $ ty b)) -- aがpointerでbが違うなら
+         then expToInternal d2 (SMul SInt b (SConst SInt 4)) -- bを4倍
+         else expToInternal d2 b -- そうじゃないならそのまま
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
                   (ex1 ++ ex2 ++ [IrAssign d (IrSub d1 d2)]))]
-expToInternal d (Mul _ a b) = do
+expToInternal d (SMul _ a b) = do
   d1 <- mkNewDecl
   d2 <- mkNewDecl
   ex1 <- expToInternal d1 a
   ex2 <- expToInternal d2 b        
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
                   (ex1 ++ ex2 ++ [IrAssign d (IrMul d1 d2)]))]
-expToInternal d (Div _ a b) = do
+expToInternal d (SDiv _ a b) = do
   d1 <- mkNewDecl
   d2 <- mkNewDecl
   ex1 <- expToInternal d1 a
@@ -210,7 +256,7 @@ expToInternal d (Div _ a b) = do
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
                   (ex1 ++ ex2 ++ [IrAssign d (IrDiv d1 d2)]))]
 -- 変数周り
-expToInternal d (Address _ a) = do
+expToInternal d (SAddress _ a) = do
   s <- get -- stateを取って
   let str = newVar(varNum s) -- 新しい変数名を作る
       d2 = (Decl str Var STemp) -- その名前のdeclを作って
@@ -221,26 +267,26 @@ expToInternal d (Address _ a) = do
   int <- expToInternal d2 a -- addressの中身をd2に束縛
   let re = (IrRead d d2) -- d2を受け取ったdに束縛して
   return ([(IrComp [var] (int ++ [re]))]) -- addressの中身を束縛する過程とdに束縛した式をまとめて返す
-expToInternal d (Pointer _ a) = do
+expToInternal d (SPointerExp _ a) = do
   dec <- mkNewDecl -- 新しい変数を作る
   ir <- expToInternal dec a -- そこに、Pointerの中身を束縛する
   return [IrComp [(VarDecl dec)]
                  (ir ++ [(IrRead d dec)])] -- 中身を束縛する過程と、IrReadをくっつけて返す
-expToInternal d (Id _ a) =  do
+expToInternal d (SId _ a) =  do
   s <- get
   let e = env s      
       dec = objCheck a e
       (Just decl) = dec
   return [(IrAssign d (IrVar decl))]
-expToInternal d (Const _ a) = return [(IrAssign d (IrLit a))]
+expToInternal d (SConst _ a) = return [(IrAssign d (IrLit a))]
 
 -- その他
-expToInternal d (ManyExp _ e) = do
+expToInternal d (SManyExp _ e) = do
   ds <- manyDecls e
   inter <- (zipInternal ((init ds) ++ [d]) e)
   return [IrComp (map (VarDecl) ds)
                  inter]
-expToInternal d (Func _ str es) = do
+expToInternal d (SFuncExp _ str es) = do
   if(str == "print")
   then do
     dec <- mkNewDecl
@@ -261,16 +307,16 @@ expToInternal d (Func _ str es) = do
       decls <- manyDecls es
       inters <- zipInternal decls es
       return [IrComp (map (VarDecl) decls) (inters ++ [(IrCall d decl decls)])]
-expToInternal _ (Assign _ e1 e2) = do
+expToInternal _ (SAssign _ e1 e2) = do
   st <- get
   case e1 of
-    (Id _ str)-> do
+    (SId _ str) -> do
             let (Just d) = objCheck str (env st)
             d1 <- mkNewDecl
             ex1 <- expToInternal d1 e2
             return ([(IrComp [(VarDecl d1)]
                              (ex1 ++ [IrAssign d (IrVar d1)]))])
-    (Pointer _ e) -> do
+    (SPointerExp _ e) -> do
             d1 <- mkNewDecl -- 新しい変数を作って
             d2 <- mkNewDecl
             inter <- expToInternal d1 e -- そこに中身を束縛
@@ -290,7 +336,7 @@ manyDecls (_:xs) = do
   ds <- manyDecls xs
   return (dc:ds)
 
-zipInternal :: [Decl] -> [Exp] -> WithIr [IrInternal]
+zipInternal :: [Decl] -> [SExp] -> WithIr [IrInternal]
 zipInternal _ [] = return []
 zipInternal [] _ = return []
 zipInternal (x:xs) (e:es) = do
@@ -298,13 +344,12 @@ zipInternal (x:xs) (e:es) = do
   fuga <- zipInternal xs es
   return (hoge ++ fuga)
 
--- varCheck :: Exp -> WithIr IrInternal
--- varCheck a = do
---   sta <- get
---   case a of
---     (Id _ str)-> do
---            let (Just dec) = (objCheck str)
---            return (IrVar dec)
---     (Const _ num)-> return (IrLit num)
---     _ ->  
 
+-- Pointerの類ならTrue
+addCheck :: SemType -> Bool
+addCheck (SPointer _) = True
+addCheck (SArray _ _ ) = True
+addCheck (SFunc ty args) = (addCheck ty)
+addCheck _ = False
+
+        

@@ -19,7 +19,7 @@ addEmpEnv :: (Env,Int,Int) -> (Env,Int,Int)
 addEmpEnv s = ((M.empty : env s), varNum s, labelNum s)
 
 rmTopEnv ::  (Env,Int,Int) -> (Env,Int,Int)
-rmTopEnv ((a:hoge),num,label) = (hoge,num,label)
+rmTopEnv ((_:hoge),num,label) = (hoge,num,label)
 
 updEnv :: Decl -> (Env,Int,Int) -> (Env,Int,Int)
 updEnv d s = ((addEnv d (env s)),(varNum s),(labelNum s))
@@ -100,17 +100,19 @@ stmtToInternal (SIfElse _ e s1 s2) = do
   ex <- expToInternal dec expr
   l1 <- mkNewLabel
   l2 <- mkNewLabel
+  l3 <- mkNewLabel
   stm1 <- stmtToInternal s1
   stm2 <- stmtToInternal s2
-  return [(IrComp [VarDecl dec] (ex ++ [(IrIf dec l1 l2)] ++ [l1] ++ stm1 ++[l2] ++ stm2))]
+  return [(IrComp [VarDecl dec] (ex ++ [(IrIf dec l1 l2)] ++ [l1] ++ stm1 ++ [(IrGoto l3)] ++[l2] ++ stm2 ++ [(IrGoto l3)] ++ [l3]))]
 stmtToInternal (SWhile _ e st) = do
   dec <- mkNewDecl
   let (SemanticExpression expr) = e
   ex <- expToInternal dec expr
+  l0 <- mkNewLabel
   l1 <- mkNewLabel
   l2 <- mkNewLabel
   stm <- stmtToInternal st
-  return [(IrComp [(VarDecl dec)] (ex ++ [(IrIf dec l1 l2)] ++ [l1] ++ stm ++[l2]))]
+  return ([l0] ++ [(IrComp [(VarDecl dec)] (ex  ++ [(IrIf dec l1 l2)] ++ [l1] ++ stm ++ [(IrGoto l0)] ++ [l2]))])
 stmtToInternal (SReturn _ e) = do
   dec <- mkNewDecl
   let (SemanticExpression expr) = e

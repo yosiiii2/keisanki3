@@ -1,8 +1,8 @@
-small C parser
+small C intermediate representation
 ===
 
 Overview  
-This program make an AST of small C code.  
+This program make an Intermediate representation of small C code.  
 The input file is accepted as command line argument.  
 
 ## Requirement
@@ -13,9 +13,9 @@ build tool :
 stack 1.0.4.3  
 
 ## How to Build
-in the directory `/parser` you run the command:  
+in the directory `/ir` you run the command:  
 `$stack build`  
 and then you make some small C code, and  
-`$stack exec parser-exe hoge.sc`  
+`$stack exec ir-exe hoge.sc`  
 then you can see the AST of the code.
 

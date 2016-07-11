@@ -121,12 +121,12 @@ makeAddrIn (IrCall d1 d2 argsd) = do
   st <- get
   let (Just dec1) = objCheck (name d1) (env st)
       (Just dec2) = objCheck (name d2) (env st)
-  hoge <- mapM convertDecl argsd
+      (Just hoge) = mapM (\d -> (objCheck (name d) (env st))) argsd
   return [AddrCall dec1 dec2 hoge]
 makeAddrIn (IrVCall d argsd) = do
   st <- get
   let (Just dec) = objCheck (name d) (env st)
-  hoge <- mapM convertDecl argsd
+      (Just hoge) = mapM (\fuga -> (objCheck (name fuga) (env st))) argsd
   return [AddrVCall dec hoge]
 makeAddrIn (IrReturn d) = do
   st <- get

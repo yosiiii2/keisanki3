@@ -1,11 +1,10 @@
-module Ir where
+module Ir(makeIr) where
 
 import qualified Data.Map as M -- Map(連想配列)を扱うのに必要
 import SemanticTypeDef
 import IrTypeDef
 import ObjectCollect
 import Control.Monad.State
-
 
 env :: (Env,Int,Int) -> Env
 env (e,_,_) = e
@@ -18,7 +17,10 @@ labelNum (_,_,l) = l
 
 addEmpEnv :: (Env,Int,Int) -> (Env,Int,Int)
 addEmpEnv s = ((M.empty : env s), varNum s, labelNum s)
-                   
+
+rmTopEnv ::  (Env,Int,Int) -> (Env,Int,Int)
+rmTopEnv ((a:hoge),num,label) = (hoge,num,label)
+
 updEnv :: Decl -> (Env,Int,Int) -> (Env,Int,Int)
 updEnv d s = ((addEnv d (env s)),(varNum s),(labelNum s))
 
@@ -48,10 +50,6 @@ mkNewLabel = do
   modify updLabel
   return (IrLabel str)
 
-
-foldEnvl :: [Decl] -> (Env,Int,Int) -> (Env, Int, Int)
-foldEnvl [] st = st
-foldEnvl (x:xs) st = foldEnvl xs (updEnv x st)
     
 makeIr :: SAST -> WithIr IrAST
 makeIr ast = do  
@@ -71,20 +69,26 @@ makeIrExternal (SFunctionDef _ d ds stmt) = do
   modify addEmpEnv -- 環境の先頭に空のMap(Declを格納する)を追加
   parm <- mapM irObjColDecl ds--  パラメータを環境に追加
   st <- stmtToInternal stmt  -- stmt部分をIrに変換して、
+  modify rmTopEnv -- topの環境を削除して
   return [(FunDef d parm st)]  -- FunDefにして返す
-makeIrExternal (SFuncProto _ d _) = do
-  modify (updEnv d) -- 環境にだけ入れておく
-  return []-- プロトタイプ宣言はもういらない
+makeIrExternal (SFuncProto _ d args) = do
+  modify (updEnv d) -- 環境にだけ入れておく -- だけじゃない
+  modify addEmpEnv -- 環境の先頭に空のMap(Declを格納する)を追加
+  parm <- mapM irObjColDecl args -- パラメータを環境に追加すると同時に変換する
+  modify rmTopEnv -- topの環境を削除して          
+  return [(FunDef d parm [])] -- プロトタイプ宣言はもういらない -- まだ要る
 
 stmtToInternal :: SStmt -> WithIr [IrInternal]
 stmtToInternal (SSemiOnly _) = return []
-stmtToInternal (SCompStmt _ [] ss) = do
-  stmts <- (mapM stmtToInternal ss)
-  return (concat stmts)
-stmtToInternal (SCompStmt _ ds ss) = do
-  decls <- (mapM makeIrExternal ds)
-  stmts <- (mapM stmtToInternal ss)
-  return [IrComp (concat decls) (concat stmts)]
+stmtToInternal (SCompStmt _ [] ss) = do -- 宣言が空なら
+  stmts <- (mapM stmtToInternal ss) 
+  return (concat stmts) -- ただのstmtの配列に潰す
+stmtToInternal (SCompStmt _ ds ss) = do --宣言があったら
+  modify addEmpEnv -- 空の環境を追加して
+  decls <- (mapM makeIrExternal ds) -- declを変換して追加し、
+  stmts <- (mapM stmtToInternal ss) -- 中身のstmtを変換して
+  modify rmTopEnv -- 追加した環境を消して
+  return [IrComp (concat decls) (concat stmts)] -- 返す
 stmtToInternal (SVReturn _) = return [(IrVReturn)]
 stmtToInternal (SStatement _ e) = do
   d <- mkNewDecl -- 新しい変数を作って
@@ -180,7 +184,6 @@ expToInternal d (SLargeEq _ a b) = do
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
                   (ex1 ++ ex2 ++ [IrAssign d (IrGE d1 d2)]))]
 -- 算術演算子
-
         
 expToInternal d (SAdd _ a b) = do
   d1 <- mkNewDecl
@@ -307,7 +310,7 @@ expToInternal d (SFuncExp _ str es) = do
       decls <- manyDecls es
       inters <- zipInternal decls es
       return [IrComp (map (VarDecl) decls) (inters ++ [(IrCall d decl decls)])]
-expToInternal _ (SAssign _ e1 e2) = do
+expToInternal _ (SAssign _ e1 e2) = do -- こういうところでdeclを読み捨ててるからちょくちょく番号が抜ける
   st <- get
   case e1 of
     (SId _ str) -> do
@@ -349,7 +352,7 @@ zipInternal (x:xs) (e:es) = do
 addCheck :: SemType -> Bool
 addCheck (SPointer _) = True
 addCheck (SArray _ _ ) = True
-addCheck (SFunc ty args) = (addCheck ty)
+addCheck (SFunc ty _) = (addCheck ty)
 addCheck _ = False
 
         

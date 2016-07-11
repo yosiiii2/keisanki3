@@ -11,17 +11,20 @@ import Data.List
 
 -- declaration of "Decl" structure
 data Decl = Decl {name :: String, kind :: Kind, t :: SemType}
+          | AddrDecl {name :: String, kind :: Kind, t :: SemType, decfp :: Integer}
             deriving Show
 
 instance Eq Decl where
     (Decl s1 k1 t1) == (Decl s2 k2 t2) = (s1==s2) && (k1==k2) && (t1==t2)
-    
+    (AddrDecl s1 k1 t1 f1) == (AddrDecl s2 k2 t2 f2) = (s1==s2) && (k1==k2) && (t1==t2) && (f1==f2)
+    _ == _ = False
+
+
 data Kind = Var
           | Parm
           | Fun
           | Proto
             deriving (Show , Eq)
-
 
 data SemType = SInt
              | SVoid
@@ -82,15 +85,14 @@ data SExp = SAssign {ty :: SemType, exp1::SExp, exp2::SExp}
           | SSub {ty :: SemType, exp1::SExp, exp2::SExp} 
           | SMul {ty :: SemType, exp1::SExp, exp2::SExp} 
           | SDiv {ty :: SemType, exp1::SExp, exp2::SExp} 
-          | SNeg {ty :: SemType, exp::SExp} 
           | SAddress {ty :: SemType, exp::SExp} 
           | SPointerExp {ty :: SemType, exp::SExp} 
-          | SArrayExp {ty :: SemType, exp1::SExp, exp2::SExp}
           | SFuncExp {ty :: SemType, theNameOfFunction :: String, theArgsOfFunction :: [SExp]}
           | SId {ty :: SemType, theNameOfIdentifier :: String}
           | SConst {ty :: SemType, theNumberOfConstant :: Integer}
           | SManyExp {ty :: SemType , theInsideOfTheSME :: [SExp]}
             deriving Show
+
 
 
 data BothExp = Expression Exp

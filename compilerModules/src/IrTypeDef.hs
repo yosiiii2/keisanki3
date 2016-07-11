@@ -9,7 +9,7 @@ data IrExternal = VarDecl Decl
                 | FunDef Decl [IrExternal] [IrInternal]
                   deriving Show
 
-data IrInternal = IrAssign  Decl IrInternal
+data IrInternal = IrAssign Decl IrInternal
                 | IrWrite Decl Decl
                 | IrRead Decl Decl
                 | IrLabel String -- ここのStringはLabelのname
@@ -38,5 +38,3 @@ data IrInternal = IrAssign  Decl IrInternal
 
 type WithIr = State (Env,Int,Int)
 -- type WithIr = StateT (Env,Int,Int) (Writer [IrExternal]) 
-
-

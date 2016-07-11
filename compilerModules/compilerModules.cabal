@@ -1,5 +1,5 @@
 name:                compilerModules
-version:             0.1.0.0
+version:             0.1.0.1
 synopsis:            Modules for Small C compiler.
 description:         Please see README.md
 copyright:           2016 Author name here
@@ -18,7 +18,9 @@ library
                      , ConvertToDecl
                      , ObjectCollect
                      , Ir
-                     , IrTypeDef                    
+                     , IrTypeDef
+                     , AddrTypeDef
+                     , Address
                      
   build-depends:       base >= 4.7 && < 5
                      , parsec

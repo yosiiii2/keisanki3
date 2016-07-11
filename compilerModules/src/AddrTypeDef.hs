@@ -1,42 +1,44 @@
 module AddrTypeDef where
-
+    
 import SemanticTypeDef
 import Control.Monad.State
+import Data.List
 
 type AddrAST = [AddrEx]
 
-data AddrEx = AddrVarDecl AddrDecl
-            | AddrFunDef AddrDecl [AddrEx] [AddrIn]
-              deriving Show
+data AddrEx = AddrVarDeclGlobal Decl
+            | AddrFunDef Decl [AddrIn] [AddrIn]
 
-data AddrIn = AddrAssign AddrDecl AddrIn
-            | AddrWrite AddrDecl AddrDecl
-            | AddrRead AddrDecl AddrDecl
+instance Show AddrEx where
+    show (AddrVarDeclGlobal d) = "(AddrVarDeclGlobal " ++ (show d) ++ ")"
+    show (AddrFunDef fund argd inter) = "(AddrFunDef\n " ++ (show fund) ++ "\n\t[" ++ (intercalate "\n\t " (map show argd)) ++ "]\n\t[" ++ (intercalate "\n\t " (map show inter)) ++ "])\n"
+
+data AddrIn = AddrVarDecl Decl
+            | AddrAssign Decl AddrIn
+            | AddrWrite Decl Decl
+            | AddrRead Decl Decl
             | AddrLabel String
-            | AddrIf AddrDecl AddrIn AddrIn
+            | AddrIf Decl AddrIn AddrIn
             | AddrGoto AddrIn
-            | AddrCall AddrDecl AddrDecl [AddrDecl]
-            | AddrVCall AddrDecl [AddrDecl]
-            | AddrReturn AddrDecl
+            | AddrCall Decl Decl [Decl]
+            | AddrVCall Decl [Decl]
+            | AddrReturn Decl
             | AddrVReturn
-            | AddrPrint AddrDecl
-            | AddrAdd AddrDecl AddrDecl
-            | AddrSub AddrDecl AddrDecl
-            | AddrMul AddrDecl AddrDecl
-            | AddrDiv AddrDecl AddrDecl                  
-            | AddrGT AddrDecl AddrDecl
-            | AddrST AddrDecl AddrDecl
-            | AddrGE AddrDecl AddrDecl
-            | AddrSE AddrDecl AddrDecl
-            | AddrEQ AddrDecl AddrDecl
-            | AddrNE AddrDecl AddrDecl
-            | AddrAddr AddrDecl
-            | AddrVar AddrDecl
+            | AddrPrint Decl
+            | AddrAdd Decl Decl
+            | AddrSub Decl Decl
+            | AddrMul Decl Decl
+            | AddrDiv Decl Decl                  
+            | AddrGT Decl Decl
+            | AddrST Decl Decl
+            | AddrGE Decl Decl
+            | AddrSE Decl Decl
+            | AddrEQ Decl Decl
+            | AddrNE Decl Decl
+            | AddrAddr Decl
+            | AddrVar Decl
             | AddrLit Integer
               deriving Show
 
-data AddrDecl = AddrDecl {adname :: String, adkind :: Kind, adty :: SemType, adfp::Int}
-                deriving Show
-
-type WithFp = State Int
+type WithFp = State (Env,Integer,Integer)
 

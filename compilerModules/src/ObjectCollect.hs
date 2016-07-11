@@ -44,9 +44,9 @@ objColEx (fp@(SFuncProto p d sd)) = do -- SFuncProtoを受け取ると
           modify (\(_:xs) -> xs) -- 新たに作った環境を消去し
           return fp -- 元のSFuncProtoを返す(ここで環境がつけ加わる)
   else let (Just (Decl _ k t2)) = hoge -- 存在すれば
-        in if(((k == Proto)||(k == Fun))&&(t(d) == t2)) -- それがプロトタイプ宣言か関数宣言でありかつ引数の型が等しければ
+        in if(((k == Proto)||(k == Fun))&&(t(d) == t2)) -- それがプロトタイプ宣言か関数宣言でありかつ関数と引数の型が等しければ
            then return fp -- 環境をつけて元のSFuncProtoを返す
-           else throwError ("error at " ++ (show (sourceLine p))++ (show (sourceColumn p)) ++ ":Double Declaraion") -- そうでなければerrorを吐く
+           else throwError ("error at " ++ (show (sourceLine p))++ ":" ++ (show (sourceColumn p)) ++ ":Double Declaraion") -- そうでなければerrorを吐く
 objColEx (SFunctionDef p d sd stmt) = do -- SFunctionDefを受け取ると
   env <- get -- 環境を取り出して
   let hoge = objCheck (name d) env -- 関数名を環境内で確認し
@@ -65,7 +65,7 @@ objColEx (SFunctionDef p d sd stmt) = do -- SFunctionDefを受け取ると
              newStmt <- objColStmt t2 stmt
              modify (\(_:xs) -> xs)
              return (SFunctionDef p d sd newStmt)
-           else throwError  ("error at " ++ (show (sourceLine p)) ++ (show (sourceColumn p)) ++ ":Double Declaration") --そうでなければerrorを吐く
+           else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++(show (sourceColumn p)) ++ ":Double Declaration") --そうでなければerrorを吐く
 
 
 objColDecl :: SourcePos -> Decl -> WithEnv Decl
@@ -144,7 +144,7 @@ objColStmt nowFuncType (SVReturn p) =
     if(nowFuncType == SVoid)
     then return (SVReturn p)
     else throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ "return type: Void doesn't match the function's type: " ++ (show nowFuncType) ++ ".")
--- objColStmt _ hoge = return hoge
+objColStmt _ hoge = return hoge
 
 -- expressionからオブジェクト名を引っ張ってこないと型の情報が取り出せない
 -- じゃあ戻り値を型にすればいい

@@ -261,17 +261,25 @@ expToInternal d (SDiv _ a b) = do
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
                   (ex1 ++ ex2 ++ [IrAssign d (IrDiv d1 d2)]))]
 -- 変数周り
-expToInternal d (SAddress _ a) = do
-  s <- get -- stateを取って
-  let str = newVar(varNum s) -- 新しい変数名を作る
-      d2 = (Decl str Var STemp) -- その名前のdeclを作って
-      var = (VarDecl d2) -- そのvarDeclを作る -- compstmt開始
-  modify addEmpEnv -- 空の環境を作成
-  modify (updEnv d2) -- 環境に追加
-  modify updVar -- 変数名に使う数字を更新して
-  int <- expToInternal d2 a -- addressの中身をd2に束縛
-  let re = (IrRead d d2) -- d2を受け取ったdに束縛して
-  return ([(IrComp [var] (int ++ [re]))]) -- addressの中身を束縛する過程とdに束縛した式をまとめて返す
+expToInternal d (SAddress _ a) = do -- Addressの中身は変数参照だけ -- 普通にassignでよいのでは？
+  case a of
+    (SId _ str) -> do -- Idだったら
+           s <- get -- 環境取り出して
+           let dec = objCheck str (env s) -- Decl呼び出して
+               (Just decl) = dec
+           return [(IrAssign d (IrAddr decl))] -- IrAddrに入れて返す
+  -- それ以外は来て欲しくないので、caseかJustのパターンマッチで
+
+  -- s <- get -- stateを取って
+  -- let str = newVar(varNum s) -- 新しい変数名を作る
+  --     d2 = (Decl str Var STemp) -- その名前のdeclを作って
+  --     var = (VarDecl d2) -- そのvarDeclを作る -- compstmt開始
+  -- modify addEmpEnv -- 空の環境を作成
+  -- modify (updEnv d2) -- 環境に追加
+  -- modify updVar -- 変数名に使う数字を更新して
+  -- int <- expToInternal d2 a -- addressの中身をd2に束縛
+  -- let re = (IrRead d d2) -- d2を受け取ったdに束縛して
+  -- return ([(IrComp [var] (int ++ [re]))]) -- addressの中身を束縛する過程とdに束縛した式をまとめて返す
 expToInternal d (SPointerExp _ a) = do
   dec <- mkNewDecl -- 新しい変数を作る
   ir <- expToInternal dec a -- そこに、Pointerの中身を束縛する

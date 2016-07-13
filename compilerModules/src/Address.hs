@@ -44,10 +44,15 @@ convertDeclNum hoge (Decl str k semtype) = do --declと要素数を受け取っ�
   modify (updFp hoge) -- 要素数*4分fpをずらして
   return ret --返す
 
-
 convertDecl :: Decl -> WithFp Decl
 convertDecl d = convertDeclNum 1 d -- 要素数一個の時のDeclの変換
-  
+
+convertDeclGlobal :: Decl -> WithFp Decl
+convertDeclGlobal d = do
+  let ret = (AddrDecl (name d) (kind d) (t d) (-1)) -- global変数はfpの値が-1
+  modify (updEnv ret)
+  return ret
+                
                 
 makeAddr :: IrAST -> WithFp AddrAST
 makeAddr ir = mapM makeAddrEx ir
@@ -55,7 +60,7 @@ makeAddr ir = mapM makeAddrEx ir
 makeAddrEx :: IrExternal -> WithFp AddrEx
 makeAddrEx (VarDecl d) = do -- globalのVarDeclの変換
   modify (\(e,_,_) -> (e,0,0)) -- 一回fpを0にする
-  ret <- convertDeclNum 0 d -- とりあえずfpには0を入れておく
+  ret <- convertDeclGlobal d -- とりあえずfpには0を入れておく
   return (AddrVarDeclGlobal ret)
 makeAddrEx (FunDef d args internal) = do
   modify (updEnv d) -- 関数を環境にいれる(この時点では旧Declでofsなし)

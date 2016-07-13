@@ -262,8 +262,8 @@ objColExp (Address p e) = do
   x <- objColExp e
   if(ty x == SInt)
   then case e of
-         (Id _ _ ) -> return (SAddress (SPointer SInt) x)
-         _ -> throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":in the Address operator, you can only use Identifier.")            
+         (Id _ _ ) -> return (SAddress (SPointer SInt) x) -- 変数のアドレスだけとる
+         _ -> throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":in the Address operator, you can only use Identifier.") -- 他はエラーで弾く
   -- else if(x == (SPointer SInt)) --pointerのアドレスはナシ
   --      then return (SPointer (SPointer SInt))
   else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":in the Address, type don't match")            

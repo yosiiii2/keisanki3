@@ -1,0 +1,7 @@
+#!/bin/sh
+
+echo "Running Normal..."
+./run-normal sample/*.sc
+
+echo "Running Optimisation..."
+./run-opt sample/*.sc

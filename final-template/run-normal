@@ -1,0 +1,5 @@
+#!/bin/sh
+
+SCC_OPTION='-s spim -c demo/gen/compile'
+
+src/scc -n -e ${SCC_OPTION} $*

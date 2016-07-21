@@ -1,0 +1,7 @@
+#!/bin/sh
+
+echo "Running basic..."
+./run test/basic/*.sc
+
+echo "\nRunning err..."
+./run test/err/*.sc 2>&1 > /dev/null

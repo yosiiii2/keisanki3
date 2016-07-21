@@ -1,0 +1,35 @@
+name:                compilerModules
+version:             0.1.0.3
+synopsis:            Modules for Small C compiler.
+description:         Please see README.md
+copyright:           2016 Author name here
+category:            Web
+build-type:          Simple
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Lexer
+                     , ParserFunc
+                     , RemoveSugar
+                     , TypeDef
+                     , SemanticTypeDef
+                     , ConvertToDecl
+                     , ObjectCollect
+                     , Ir
+                     , IrTypeDef
+                     , AddrTypeDef
+                     , Address
+                     , GenTypeDef
+                     , Gen
+                     , CFG
+                     , CFGTypeDef
+                     , DFA
+                     , DFATypeDef
+                     , ReverseNode
+
+  build-depends:       base >= 4.7 && < 5
+                     , parsec
+                     , containers
+                     , mtl
+  default-language:    Haskell2010

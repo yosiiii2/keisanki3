@@ -128,20 +128,23 @@ expToInternal d (SOr _ a b) = do
   l1 <- mkNewLabel
   l2 <- mkNewLabel
   l3 <- mkNewLabel
+  l4 <- mkNewLabel
   ex1 <- expToInternal d1 a
   ex2 <- expToInternal d2 b
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
-                    (ex1 ++ ex2 ++ [(IrIf d1 l1 l2),l2,(IrIf d2 l1 l3),l1,(IrAssign d (IrLit 1)),l3,(IrAssign d (IrLit 0))]))]
+                    (ex1 ++ ex2 ++ [(IrIf d1 l1 l2),l2,(IrIf d2 l1 l3),l1,(IrAssign d (IrLit 1)),(IrGoto l4),l3,(IrAssign d (IrLit 0)),(IrGoto l4),l4]))]
 expToInternal d (SAnd _ a b) = do
   d1 <- mkNewDecl
   d2 <- mkNewDecl
   l1 <- mkNewLabel
   l2 <- mkNewLabel
   l3 <- mkNewLabel
+  l4 <- mkNewLabel
   ex1 <- expToInternal d1 a
   ex2 <- expToInternal d2 b
   return [(IrComp [(VarDecl d1),(VarDecl d2)]
-                    (ex1 ++ ex2 ++ [(IrIf d1 l1 l3),l1,(IrIf d2 l2 l3),l2,(IrAssign d (IrLit 1)),l3,(IrAssign d (IrLit 0))]))]
+                    (ex1 ++ ex2 ++ [(IrIf d1 l1 l3),l1,(IrIf d2 l2 l3),l2,(IrAssign d (IrLit 1)),(IrGoto l4),l3,(IrAssign d (IrLit 0)),(IrGoto l4),l4]))]
+
 -- 比較演算子
 expToInternal d (SEqual _ a b) = do
   d1 <- mkNewDecl

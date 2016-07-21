@@ -38,7 +38,7 @@ data Emit = Emit Reg Integer
           deriving (Eq,Show)
 
 data Reg = A0 | A1 | A2 | A3
-         | T0 | T1 | T2 | T3
+         | T0 | T1 | T2 | T3 | T4
          | V0 | Fp | Sp | Ra
            deriving (Eq,Show)
 
@@ -107,7 +107,9 @@ showReg T0 = "$t0"
 showReg T1 = "$t1"
 showReg T2 = "$t2"
 showReg T3 = "$t3"
+showReg T4 = "$t4"
 showReg V0 = "$v0"
 showReg Fp = "$fp"
 showReg Sp = "$sp"
 showReg Ra = "$ra"
+             

@@ -1,0 +1,44 @@
+(AddrFunDef
+ AddrDecl {name = "print", kind = Proto, t = void function with argument int, decfp = 0}
+	[AddrVarDecl (AddrDecl {name = "i", kind = Parm, t = int, decfp = 0})]
+	[])
+
+
+(AddrFunDef
+ AddrDecl {name = "main", kind = Fun, t = int function with argument , decfp = -28}
+	[]
+	[AddrVarDecl (AddrDecl {name = "a", kind = Var, t = int, decfp = -4})
+	 AddrVarDecl (AddrDecl {name = "b", kind = Var, t = int, decfp = -8})
+	 AddrVarDecl (AddrDecl {name = "_x1", kind = Var, t = Temp, decfp = -12})
+	 AddrAssign (AddrDecl {name = "_x1", kind = Var, t = Temp, decfp = -12}) (AddrLit 0)
+	 AddrAssign (AddrDecl {name = "a", kind = Var, t = int, decfp = -4}) (AddrVar (AddrDecl {name = "_x1", kind = Var, t = Temp, decfp = -12}))
+	 AddrVarDecl (AddrDecl {name = "_x3", kind = Var, t = Temp, decfp = -12})
+	 AddrAssign (AddrDecl {name = "_x3", kind = Var, t = Temp, decfp = -12}) (AddrLit 10)
+	 AddrAssign (AddrDecl {name = "b", kind = Var, t = int, decfp = -8}) (AddrVar (AddrDecl {name = "_x3", kind = Var, t = Temp, decfp = -12}))
+	 AddrVarDecl (AddrDecl {name = "_x5", kind = Var, t = Temp, decfp = -12})
+	 AddrAssign (AddrDecl {name = "_x5", kind = Var, t = Temp, decfp = -12}) (AddrLit 0)
+	 AddrAssign (AddrDecl {name = "a", kind = Var, t = int, decfp = -4}) (AddrVar (AddrDecl {name = "_x5", kind = Var, t = Temp, decfp = -12}))
+	 AddrLabel "L0"
+	 AddrVarDecl (AddrDecl {name = "_x6", kind = Var, t = Temp, decfp = -12})
+	 AddrVarDecl (AddrDecl {name = "_x7", kind = Var, t = Temp, decfp = -16})
+	 AddrVarDecl (AddrDecl {name = "_x8", kind = Var, t = Temp, decfp = -20})
+	 AddrAssign (AddrDecl {name = "_x7", kind = Var, t = Temp, decfp = -16}) (AddrVar (AddrDecl {name = "a", kind = Var, t = int, decfp = -4}))
+	 AddrAssign (AddrDecl {name = "_x8", kind = Var, t = Temp, decfp = -20}) (AddrVar (AddrDecl {name = "b", kind = Var, t = int, decfp = -8}))
+	 AddrAssign (AddrDecl {name = "_x6", kind = Var, t = Temp, decfp = -12}) (AddrST (AddrDecl {name = "_x7", kind = Var, t = Temp, decfp = -16}) (AddrDecl {name = "_x8", kind = Var, t = Temp, decfp = -20}))
+	 AddrIf (AddrDecl {name = "_x6", kind = Var, t = Temp, decfp = -12}) (AddrLabel "L1") (AddrLabel "L2")
+	 AddrLabel "L1"
+	 AddrVarDecl (AddrDecl {name = "_x10", kind = Var, t = Temp, decfp = -16})
+	 AddrAssign (AddrDecl {name = "_x10", kind = Var, t = Temp, decfp = -16}) (AddrVar (AddrDecl {name = "a", kind = Var, t = int, decfp = -4}))
+	 AddrPrint (AddrDecl {name = "_x10", kind = Var, t = Temp, decfp = -16})
+	 AddrVarDecl (AddrDecl {name = "_x12", kind = Var, t = Temp, decfp = -16})
+	 AddrVarDecl (AddrDecl {name = "_x13", kind = Var, t = Temp, decfp = -20})
+	 AddrVarDecl (AddrDecl {name = "_x14", kind = Var, t = Temp, decfp = -24})
+	 AddrAssign (AddrDecl {name = "_x13", kind = Var, t = Temp, decfp = -20}) (AddrVar (AddrDecl {name = "a", kind = Var, t = int, decfp = -4}))
+	 AddrAssign (AddrDecl {name = "_x14", kind = Var, t = Temp, decfp = -24}) (AddrLit 1)
+	 AddrAssign (AddrDecl {name = "_x12", kind = Var, t = Temp, decfp = -16}) (AddrAdd (AddrDecl {name = "_x13", kind = Var, t = Temp, decfp = -20}) (AddrDecl {name = "_x14", kind = Var, t = Temp, decfp = -24}))
+	 AddrAssign (AddrDecl {name = "a", kind = Var, t = int, decfp = -4}) (AddrVar (AddrDecl {name = "_x12", kind = Var, t = Temp, decfp = -16}))
+	 AddrGoto (AddrLabel "L0")
+	 AddrLabel "L2"
+	 AddrVarDecl (AddrDecl {name = "_x15", kind = Var, t = Temp, decfp = -12})
+	 AddrAssign (AddrDecl {name = "_x15", kind = Var, t = Temp, decfp = -12}) (AddrVar (AddrDecl {name = "b", kind = Var, t = int, decfp = -8}))
+	 AddrReturn (AddrDecl {name = "_x15", kind = Var, t = Temp, decfp = -12})])

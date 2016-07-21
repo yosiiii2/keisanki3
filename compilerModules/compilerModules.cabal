@@ -1,5 +1,5 @@
 name:                compilerModules
-version:             0.1.0.1
+version:             0.1.0.3
 synopsis:            Modules for Small C compiler.
 description:         Please see README.md
 copyright:           2016 Author name here
@@ -23,7 +23,12 @@ library
                      , Address
                      , GenTypeDef
                      , Gen
-                     
+                     , CFG
+                     , CFGTypeDef
+                     , DFA
+                     , DFATypeDef
+                     , ReverseNode
+
   build-depends:       base >= 4.7 && < 5
                      , parsec
                      , containers

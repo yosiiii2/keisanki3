@@ -34,7 +34,7 @@ rmTopEnv ((_:xs),f,m) = (xs,f,m)
 
 convertFuncDecl :: Integer -> Decl -> WithFp Decl
 convertFuncDecl num d = return (AddrDecl (name d) (kind d) (t d) num)
-                        
+
 convertDeclNum :: Integer -> Decl -> WithFp Decl
 convertDeclNum hoge (Decl str k semtype) = do --declと要素数を受け取って
   st <- get -- 現在の状況をとって
@@ -52,11 +52,11 @@ convertDeclGlobal d = do
   let ret = (AddrDecl (name d) (kind d) (t d) (-1)) -- global変数はfpの値が-1
   modify (updEnv ret)
   return ret
-                
-                
+
+
 makeAddr :: IrAST -> WithFp AddrAST
 makeAddr ir = mapM makeAddrEx ir
-                    
+
 makeAddrEx :: IrExternal -> WithFp AddrEx
 makeAddrEx (VarDecl d) = do -- globalのVarDeclの変換
   modify (\(e,_,_) -> (e,0,0)) -- 一回fpを0にする
@@ -64,10 +64,10 @@ makeAddrEx (VarDecl d) = do -- globalのVarDeclの変換
   return (AddrVarDeclGlobal ret)
 makeAddrEx (FunDef d args internal) = do
   modify (updEnv d) -- 関数を環境にいれる(この時点では旧Declでofsなし)
-  modify (\(e,_,_) -> (e,4,0)) -- 一回fpを4にする(パラメータを4スタートで置くため),maxも0にする
+  modify (\(e,_,_) -> (e,0,0)) -- 一回fpを0にする(パラメータを0スタートで置くため),maxも0にする
   modify addEmpEnv -- param用に環境を作る
   param <- makeAddrVarParam args -- パラメータを変換する
-  modify (\(e,_,_) -> (e,0,0)) -- fpを0にしてmaxも0にする(パラメータの分は無視する)
+  modify (\(e,_,_) -> (e,-4,0)) -- fp=-4(局所変数は-4から)maxも0にする(パラメータの分は無視する)
   inter <- mapM makeAddrIn internal -- 局所変数を変換する
   st <- get -- 局所変数全体で使った分の最大のfp(= maxFp)を取り出す
   let num = maxFp st
@@ -88,14 +88,14 @@ makeAddrVarLocal (VarDecl d) = do
     then modify (updMax nowfp)
     else modify (updMax nowMax)
   return (AddrVarDecl ret)
-              
+
 makeAddrVarParam :: [IrExternal] -> WithFp [AddrIn] -- パラメータのVarDeclの変換
 makeAddrVarParam [] = return []
 makeAddrVarParam ((VarDecl d):ds) = do
   ret <- convertDeclNum (-1) d-- +方向に取るために-1する
   rest <- ((makeAddrVarParam ds))
   return ((AddrVarDecl ret) : rest)
-           
+
 makeAddrIn :: IrInternal -> WithFp [AddrIn]
 makeAddrIn (IrAssign d irin) = do
   st <- get
@@ -117,7 +117,7 @@ makeAddrIn (IrIf d in1 in2) = do
   st <- get
   let (Just dec) = objCheck (name d) (env st)
   adIn1 <- makeAddrIn in1
-  adIn2 <- makeAddrIn in2 
+  adIn2 <- makeAddrIn in2
   return [(AddrIf dec (head adIn1) (head adIn2))]
 makeAddrIn (IrGoto in1) = do
   adIn <- makeAddrIn in1
@@ -150,7 +150,7 @@ makeAddrIn (IrComp e i) = do
   inter <- mapM makeAddrIn i -- 中身を変換
   modify (\(en,_,m) -> (en,nowFp,m)) -- fpを元に戻す(スコープ外れたら同じとこに置けるから)
   modify rmTopEnv -- 追加した環境を削除
-  return (decls ++ concat inter) -- compの構造を潰して  
+  return (decls ++ concat inter) -- compの構造を潰して
 makeAddrIn (IrAdd d1 d2) = do
   st <- get
   let (Just dec1) = objCheck (name d1) (env st)
@@ -210,6 +210,3 @@ makeAddrIn (IrVar d) = do
   let (Just dec) = objCheck (name d) (env st)
   return [AddrVar dec]
 makeAddrIn (IrLit num) = return [(AddrLit num)]
-
-
-

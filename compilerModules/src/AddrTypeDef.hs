@@ -1,5 +1,5 @@
 module AddrTypeDef where
-    
+
 import SemanticTypeDef
 import Control.Monad.State
 import Data.List
@@ -28,7 +28,7 @@ data AddrIn = AddrVarDecl Decl
             | AddrAdd Decl Decl
             | AddrSub Decl Decl
             | AddrMul Decl Decl
-            | AddrDiv Decl Decl                  
+            | AddrDiv Decl Decl
             | AddrGT Decl Decl
             | AddrST Decl Decl
             | AddrGE Decl Decl
@@ -38,8 +38,7 @@ data AddrIn = AddrVarDecl Decl
             | AddrAddr Decl
             | AddrVar Decl
             | AddrLit Integer
-              deriving Show
+              deriving (Show,Eq)
 
 
 type WithFp = State (Env,Integer,Integer)
-

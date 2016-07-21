@@ -1,0 +1,11 @@
+#!/bin/sh
+
+for file in ../final-template/test/basic/*.sc
+do
+	text=${file%.*}.addr
+	hoge=${text##*/}
+	echo ${file}
+	stack exec addr-exe ${file} > ./addrs/${hoge}
+done
+
+

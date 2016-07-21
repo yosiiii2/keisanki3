@@ -9,6 +9,9 @@ import Ir -- my module
 import Address -- my module
 import Gen
 import GenTypeDef
+import CFG -- my module
+import DFA
+import ReverseNode
 import Control.Monad.State
 import Control.Monad.Except
 import Control.Monad.Writer
@@ -22,10 +25,9 @@ run input = case parse program "Program" input of
                   in case (fst hoge) of
                        Left err2 -> show err2
                        Right val2 -> if(null $ snd hoge)
-                                     then (showMips $ generate $ evalState (makeAddr (evalState (makeIr val2) ([],0,0))) ([],0,0))
+                                     then (showMips $ generate $ reverseCFG $ doDFA $ makeCFG $ evalState (makeAddr (evalState (makeIr val2) ([],0,0))) ([],0,0))
                                      else ((intercalate "\n" (map show (snd hoge)))
-                                           ++ "\n"
-                                          ++ (intercalate "\n" (map show $ generate $ evalState (makeAddr (evalState (makeIr val2) ([],0,0))) ([],0,0))))
+                                           ++ "\n"++ (intercalate "\n" (map show $ generate $ reverseCFG $ doDFA $ makeCFG $ evalState (makeAddr (evalState (makeIr val2) ([],0,0))) ([],0,0))))
 
 main :: IO()
 main = do

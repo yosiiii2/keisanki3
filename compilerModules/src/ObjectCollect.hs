@@ -5,10 +5,10 @@ import TypeDef -- Expとかの定義(先頭にSがつかないdata型)
 import qualified Data.Map as M -- Map(連想配列)を扱うのに必要
 import Control.Monad.Except -- Exceptモナドを扱うのに必要
 import Control.Monad.State -- Stateモナドを扱うのに必要
-import Control.Monad.Writer    
+import Control.Monad.Writer
 import SemanticTypeDef -- SExternal とかの定義(先頭にSがつくやつとDecl)
 import ConvertToDecl -- 各種宣言をDeclに置き換えたASTを吐く
-    
+
 -- キーに一致するdeclを探して、見つかったらそのdeclを返して、見つからなかったらNothingを返す
 objCheck :: String -> Env -> Maybe Decl
 objCheck _ [] = Nothing
@@ -103,7 +103,7 @@ objColDecl p d = do
                       modify (addEnv d) -- 環境に追加
                       return d
 
-                         
+
 objColStmt :: SemType -> SStmt -> WithEnv SStmt -- 今いる関数の型としてのsとSStmtを受け取って環境付きのSStmtを返す
 objColStmt _ (SStatement p e) = do -- 受け取ったのがSStatementなら
   let (Expression expr) = e
@@ -126,7 +126,7 @@ objColStmt nowFuncType (SIfElse p e s1 s2) = do
     return (SIfElse p (SemanticExpression cond) st1 st2)
   else  throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":If statement's condition's type: " ++ (show cond) ++ " isn't Int.")
 objColStmt nowFuncType (SWhile p e s1) = do
-  let (Expression expr) = e  
+  let (Expression expr) = e
   cond <- objColExp expr
   if((ty cond) == SInt)
   then do
@@ -152,11 +152,11 @@ objColExp :: Exp -> WithEnv SExp
 objColExp (Id p str) = do
   env <- get
   let hoge = objCheck str env
-  if(hoge == Nothing) then throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":unknown variable " ++ str) 
+  if(hoge == Nothing) then throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":unknown variable " ++ str)
   else do
       let (Just a) = hoge
       case (t a) of
-        (SFunc _ _) -> throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":called function as variable " ++ str) 
+        (SFunc _ _) -> throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":called function as variable " ++ str)
         _ -> return (SId (t a) str)
 objColExp (Const _ num) = return (SConst SInt num)
 objColExp (Func p str args) = do
@@ -172,7 +172,7 @@ objColExp (Func p str args) = do
                   let typeOfArgs2 = map ty piyo
                   if(typeOfArgs == typeOfArgs2)
                   then (return (SFuncExp test str piyo))
-                  else throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":arguments' types don't match, in the call of function:" ++ str)                  
+                  else throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":arguments' types don't match, in the call of function:" ++ str)
         _ -> throwError ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ": called function is not declared as function : " ++ (show a))
 objColExp (Or p e1 e2) = do
   t1 <- (objColExp e1)
@@ -266,7 +266,7 @@ objColExp (Address p e) = do
          _ -> throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":in the Address operator, you can only use Identifier.") -- 他はエラーで弾く
   -- else if(x == (SPointer SInt)) --pointerのアドレスはナシ
   --      then return (SPointer (SPointer SInt))
-  else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":in the Address, type don't match")            
+  else throwError  ("error at " ++ (show (sourceLine p)) ++ ":" ++ (show (sourceColumn p)) ++ ":in the Address, type don't match")
 objColExp (Pointer p e) = do
   x <- objColExp e
   if(ty x == (SPointer SInt))
@@ -289,4 +289,3 @@ leftCheck :: Exp -> Bool
 leftCheck (Pointer _ _) = True
 leftCheck (Id _ _) = True
 leftCheck _ = False
-
